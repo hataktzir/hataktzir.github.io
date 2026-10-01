@@ -2,35 +2,504 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>התקציר</title>
-<meta name="description" content="התקציר - קטעים ארוכים מהלייבים של סטרימרים ישראלים.">
+<meta name="description" content="התקציר: מערכת AI שמקצרת תוכן ארוך - לייבים, הרצאות, פודקאסטים, אימונים - לקליפים מוכנים לפרסום, בלי עריכה ידנית בשום שלב.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://hataktzir.github.io/">
+<meta property="og:title" content="התקציר - תוכן ארוך נכנס, קליפים מוכנים יוצאים">
+<meta property="og:description" content="מערכת AI שצופה בוידאו ארוך מתחילתו ועד סופו, בוחרת את הרגעים ששווה לראות ומוציאה קליפים מוכנים לפרסום. בלי עריכה ידנית.">
+<meta property="og:image" content="https://hataktzir.github.io/demo/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;900&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root { --navy:#151B25; --cream:#F7F4ED; --gold:#CE8B3C; }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--navy); color:var(--cream);
-         font-family:"Heebo", Arial, sans-serif; line-height:1.7; }
-  main { max-width:680px; margin:0 auto; padding:64px 20px; }
-  h1 { font-size:56px; margin:0 0 8px; font-weight:900; }
-  h1 span { color:var(--gold); }
-  p { font-size:19px; margin:0 0 18px; opacity:.92; }
-  a { color:var(--gold); }
-  .slash { width:6px; height:70px; background:var(--gold); transform:skewX(-18deg); margin-bottom:28px; }
-  footer { margin-top:56px; font-size:15px; opacity:.7; }
+/* Layout: one narrow reading column; the demo (stream timeline + run log) breaks out wider. Brand from the channel: navy, cream, gold, skewed slash. */
+:root {
+  --navy: #151B25;      /* page */
+  --navy-2: #1C2431;    /* raised surface */
+  --line: #2C3646;      /* rules, grid */
+  --cream: #F7F4ED;     /* text */
+  --muted: #A9AFB9;     /* secondary text, navy-tinted grey */
+  --gold: #CE8B3C;      /* brand accent */
+  --gold-soft: #CE8B3C33;
+  --red: #E0303A;       /* live dot, from the thumbnail theme */
+  --font-display: "Heebo", "Arial Hebrew", Arial, sans-serif;
+  --font-body: "Heebo", "Arial Hebrew", Arial, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --s1: 8px; --s2: 16px; --s3: 24px; --s4: 40px; --s5: 72px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--navy); color: var(--cream);
+  font-family: var(--font-body); font-size: 18px; line-height: 1.7;
+  padding-inline: max(16px, env(safe-area-inset-left, 0px));
+  padding-block: env(safe-area-inset-top, 0px) env(safe-area-inset-bottom, 0px);
+}
+a { color: var(--gold); text-underline-offset: 3px; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+img { max-width: 100%; display: block; }
+.wrap { max-width: 720px; margin-inline: auto; }
+.wide { max-width: 1040px; margin-inline: auto; }
+section { padding-block: var(--s5) 0; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.15; }
+h2 { font-size: clamp(28px, 4.2vw, 40px); font-weight: 900; margin-bottom: var(--s2); }
+h3 { font-size: 20px; font-weight: 700; }
+p { margin: 0 0 var(--s2); }
+.lede { font-size: 20px; color: var(--cream); opacity: .92; max-width: 62ch; }
+.muted { color: var(--muted); }
+.data { font-family: var(--font-data); font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; }
+.kicker { font-size: 14px; letter-spacing: .08em; color: var(--gold); font-weight: 700; margin-bottom: var(--s1); display: block; }
+
+/* Hero */
+.hero { padding-block: var(--s5) 0; display: grid; gap: var(--s3); }
+.brand { display: flex; align-items: center; gap: 14px; }
+.slash { width: 6px; height: 46px; background: var(--gold); transform: skewX(-18deg); }
+.brand b { font-family: var(--font-display); font-weight: 900; font-size: 30px; }
+.brand b span { color: var(--gold); }
+.hero h1 { font-size: clamp(38px, 7vw, 68px); font-weight: 900; letter-spacing: -.01em; }
+.hero h1 em { font-style: normal; color: var(--gold); }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 4px; font-weight: 700; font-size: 17px; text-decoration: none; border: 1px solid var(--gold); color: var(--cream); background: transparent; cursor: pointer; font-family: inherit; }
+.btn.primary { background: var(--gold); color: var(--navy); }
+.btn:hover { filter: brightness(1.08); }
+.kinds { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.kinds li { border: 1px solid var(--line); border-radius: 999px; padding: 4px 14px; font-size: 15px; color: var(--cream); }
+.kinds li:last-child { border-color: var(--gold); color: var(--gold); }
+.live-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--red); display: inline-block; box-shadow: 0 0 0 4px #E0303A33; }
+
+/* Proof strip */
+.proof { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); margin-top: var(--s4); }
+.proof div { background: var(--navy); padding: var(--s2); min-width: 0; }
+.proof b { display: block; font-family: var(--font-data); font-size: 26px; font-weight: 500; color: var(--cream); direction: ltr; text-align: right; }
+.proof span { font-size: 14px; color: var(--muted); line-height: 1.4; display: block; }
+.asof { font-size: 13px; color: var(--muted); margin-top: var(--s1); }
+
+/* Stream timeline */
+.demo { background: var(--navy-2); border: 1px solid var(--line); padding: var(--s3); }
+.demo-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s2); align-items: baseline; margin-bottom: var(--s2); }
+.demo-head .meta { font-size: 15px; color: var(--muted); }
+.tl-scroll { overflow-x: auto; }
+#timeline { width: 100%; min-width: 560px; height: auto; display: block; }
+#timeline .seg { cursor: pointer; transition: opacity .2s; }
+#timeline text { font-family: var(--font-data); font-size: 12px; fill: var(--muted); }
+#timeline text.he { font-family: var(--font-body); font-size: 13px; }
+.controls { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); align-items: center; margin-top: var(--s2); font-size: 15px; }
+.controls label { display: flex; align-items: center; gap: 10px; }
+.controls input[type=range] { accent-color: var(--gold); width: 160px; }
+.funnel { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 15px; color: var(--muted); }
+.funnel b { color: var(--cream); font-family: var(--font-data); font-weight: 500; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); margin-top: var(--s1); }
+.legend i { display: inline-block; width: 12px; height: 12px; vertical-align: -1px; margin-inline-end: 6px; }
+
+/* Selected segment detail */
+.detail { margin-top: var(--s3); display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: var(--s3); align-items: start; border-top: 1px solid var(--line); padding-top: var(--s3); }
+.detail img { aspect-ratio: 16/9; width: 100%; object-fit: cover; border: 1px solid var(--line); }
+.detail .ph { aspect-ratio: 16/9; width: 100%; border: 1px dashed var(--line); display: grid; place-items: center; color: var(--muted); font-size: 15px; text-align: center; padding: var(--s2); }
+.detail h3 { margin-bottom: var(--s1); }
+.facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 16px; font-size: 15px; margin: var(--s2) 0; }
+.facts dt { color: var(--muted); }
+.facts dd { margin: 0; }
+.status { display: inline-block; font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px; border: 1px solid currentColor; }
+.st-up { color: var(--gold); } .st-q { color: var(--cream); } .st-no { color: var(--muted); }
+.note { font-size: 14px; color: var(--muted); border-inline-start: 2px solid var(--gold); padding-inline-start: 10px; }
+
+/* Run log */
+.run { margin-top: var(--s4); }
+.run-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--s2); margin-bottom: var(--s2); }
+ol.log { list-style: none; margin: 0; padding: 0; border-inline-start: 2px solid var(--line); }
+ol.log li { position: relative; display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; gap: 4px 16px; padding: 10px 18px 10px 0; align-items: baseline; transition: opacity .25s; }
+ol.log li::before { content: ""; position: absolute; inset-inline-start: -7px; top: 18px; width: 12px; height: 12px; border-radius: 50%; background: var(--gold); border: 2px solid var(--navy-2); }
+ol.log li.pending { opacity: .3; }
+ol.log li.active::before { background: var(--red); box-shadow: 0 0 0 5px #E0303A33; }
+ol.log .t { font-family: var(--font-data); font-size: 15px; color: var(--gold); direction: ltr; text-align: right; }
+ol.log .d { font-size: 14px; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+ol.log .what small { display: block; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.total { margin-top: var(--s2); font-size: 16px; }
+
+/* Clips */
+.clips { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: var(--s3); margin-top: var(--s3); }
+.clip { text-decoration: none; color: var(--cream); display: grid; gap: 8px; align-content: start; }
+.clip .th { position: relative; }
+.clip .th img { aspect-ratio: 16/9; width: 100%; object-fit: cover; }
+.clip .dur { position: absolute; bottom: 6px; left: 6px; background: #000000CC; color: #fff; font-family: var(--font-data); font-size: 12px; padding: 1px 6px; border-radius: 3px; }
+.clip h3 { font-size: 16px; font-weight: 500; line-height: 1.4; }
+.clip .sub { font-size: 13px; color: var(--muted); }
+.clip:hover h3 { color: var(--gold); }
+.clip.sel .th img { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+/* AI section */
+.ai { display: grid; gap: var(--s3); margin-top: var(--s3); }
+.ai > div { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: var(--s2); }
+.ai .n { font-family: var(--font-data); color: var(--gold); font-size: 15px; padding-top: 3px; }
+.ai h3 { margin-bottom: 4px; }
+.ai p { color: var(--muted); margin: 0; font-size: 17px; }
+
+/* Numbers table */
+table.nums { width: 100%; border-collapse: collapse; font-size: 16px; margin-top: var(--s2); }
+table.nums th, table.nums td { text-align: right; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.nums th { color: var(--muted); font-weight: 500; font-size: 14px; }
+table.nums td:nth-child(2) { font-family: var(--font-data); white-space: nowrap; }
+table.nums td:last-child { color: var(--muted); font-size: 14px; }
+
+.lessons { display: grid; gap: var(--s3); margin-top: var(--s2); }
+.lessons div { border-top: 1px solid var(--line); padding-top: var(--s2); }
+.lessons p { color: var(--muted); margin: 6px 0 0; font-size: 17px; }
+
+.road { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); margin-top: var(--s3); }
+.road div { min-width: 0; }
+.road b { display: block; font-family: var(--font-display); font-size: 19px; margin-bottom: 4px; }
+.road p { color: var(--muted); font-size: 16px; margin: 0; }
+.road .when { font-size: 13px; color: var(--gold); font-weight: 700; letter-spacing: .06em; display: block; margin-bottom: 6px; }
+
+ul.plan { list-style: none; margin: var(--s2) 0 0; padding: 0; display: grid; gap: 0; }
+ul.plan li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; padding-block: 14px; border-top: 1px solid var(--line); justify-items: start; }
+ul.plan b { font-family: var(--font-display); font-size: 18px; display: block; }
+ul.plan p { color: var(--muted); font-size: 16px; margin: 2px 0 0; }
+.pst { font-size: 12px; font-weight: 700; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; text-align: center; white-space: nowrap; }
+.pst-part { color: var(--gold); border-color: var(--gold); }
+.en { direction: ltr; text-align: left; border-top: 1px solid var(--line); padding-top: var(--s3); }
+.en p { color: var(--muted); font-size: 17px; }
+
+footer { margin-block: var(--s5) var(--s4); padding-top: var(--s3); border-top: 1px solid var(--line); font-size: 15px; color: var(--muted); display: grid; gap: var(--s1); }
+footer .row { display: flex; flex-wrap: wrap; gap: 6px 20px; }
+
+@media (max-width: 760px) {
+  body { font-size: 17px; }
+  .proof { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .detail { grid-template-columns: minmax(0, 1fr); }
+  .road { grid-template-columns: minmax(0, 1fr); }
+  ol.log li { grid-template-columns: 74px minmax(0, 1fr); }
+  ol.log .d { grid-column: 2; }
+  .demo { padding: var(--s2); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
-<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;900&display=swap" rel="stylesheet">
 </head>
 <body>
-<main>
-  <div class="slash"></div>
-  <h1>ה<span>תקציר</span></h1>
-  <p>הרגעים הכי טובים מהלייבים של הסטרימרים הישראלים - בקטעים ארוכים, בלי לשבת שמונה שעות מול השידור.</p>
-  <p>כל קטע עולה עם קרדיט מלא וקישור לערוץ של היוצר. יוצר שמבקש להסיר קטע - מוסר תוך 24 שעות.</p>
-  <p><a href="https://www.youtube.com/@hataktzir">הערוץ ביוטיוב: @hataktzir</a></p>
+
+<header class="wrap hero">
+  <div class="brand"><div class="slash" aria-hidden="true"></div><b>ה<span>תקציר</span></b></div>
+  <h1>תוכן ארוך נכנס.<br><em>קליפים מוכנים</em> יוצאים.</h1>
+  <p class="lede">התקציר הוא מערכת AI שמקצרת תוכן ארוך. היא צופה בכל הוידאו מתחילתו ועד סופו, בוחרת את הרגעים ששווה לראות, ומוציאה קליפים מוכנים לפרסום: חיתוך, כותרת, תיאור, תמנייל, קרדיט והעלאה. בלי עריכה ידנית בשום שלב.</p>
+  <ul class="kinds" aria-label="סוגי תוכן"><li>לייבים</li><li>הרצאות</li><li>פודקאסטים</li><li>אימוני כושר</li><li>כל וידאו ארוך</li></ul>
+  <p class="muted" style="font-size:16px;margin:0">התחלתי בלייבים של סטרימרים ישראלים ביוטיוב, כי זה העולם שאני צופה בו. זה שוק הניסוי, לא הגבול.</p>
+  <div class="cta">
+    <a class="btn primary" href="#run">לראות ריצה אמיתית</a>
+    <a class="btn" href="https://www.youtube.com/@hataktzir" target="_blank" rel="noopener"><span class="live-dot" aria-hidden="true"></span>הערוץ ביוטיוב</a>
+    <a class="btn" href="https://github.com/lironobel/hataktzir" target="_blank" rel="noopener">הקוד ב-GitHub</a>
+  </div>
+  <div>
+    <div class="proof">
+      <div><b>$1.84</b><span>ניתוח לייב של 11.7 שעות במודל</span></div>
+      <div><b>0</b><span>דקות עריכה ידנית לקליפ</span></div>
+      <div><b>4</b><span>העלאות ביום, בתזמון אוטומטי</span></div>
+      <div><b>GTX 1650</b><span>מחשב ביתי אחד מריץ הכל</span></div>
+    </div>
+    <p class="asof">נמדד ב-29-30.9.2026. כל המספרים בדף אמיתיים ומתוארכים.</p>
+  </div>
+</header>
+
+<section id="run" class="wide">
+  <div class="wrap" style="margin-inline:auto">
+    <span class="kicker">ריצה אחת, מההתחלה ועד הסוף</span>
+    <h2>לייב של 11 שעות ו-45 דקות. 11 מועמדים. 7 קליפים ביוטיוב.</h2>
+    <p class="lede">זה לייב אמיתי של הסטרימר עודד מ-29.9.2026. המערכת תמללה 333 אלף תווים של דיבור, והמודל סימן 11 קטעים ונתן לכל אחד ציון. כל מלבן בגרף הוא קטע כזה, במיקום ובאורך האמיתיים שלו בשידור. אפשר ללחוץ על כל קטע, או להזיז את הרף ולראות מה היה נחתך.</p>
+  </div>
+
+  <div class="demo">
+    <div class="demo-head">
+      <h3>הלייב, מהשנייה הראשונה עד האחרונה</h3>
+      <span class="meta">kick.com/odedsvr · 29.9.2026 · <span class="data">11:45:21</span></span>
+    </div>
+    <div class="tl-scroll"><svg id="timeline" direction="ltr" viewBox="0 0 1000 230" role="img" aria-label="ציר הזמן של הלייב עם 11 הקטעים שהמודל סימן וציוניהם"></svg></div>
+    <div class="legend">
+      <span><i style="background:var(--gold)"></i>מעל הרף: נחתך</span>
+      <span><i style="background:var(--line)"></i>מתחת לרף</span>
+      <span>גובה המלבן = הציון שהמודל נתן (מתוך 10)</span>
+    </div>
+    <div class="controls">
+      <label for="thr">רף הציון: <b class="data" id="thrv">7</b>
+        <input type="range" id="thr" min="5" max="9" step="1" value="7">
+      </label>
+      <div class="funnel" id="funnel" aria-live="polite"></div>
+    </div>
+    <p class="muted" style="font-size:14px;margin:6px 0 0">בין השעה הרביעית לשעה ה-11 של השידור המודל לא מצא אף קטע ששווה קליפ. אלה שבע שעות שאף אחד לא צריך לשבת מולן.</p>
+    <p class="muted" style="font-size:14px;margin:6px 0 0">הרף נקבע לפי גודל הסטרימר. עודד הוא "בינוני" (50-250 אלף עוקבים), ולכן הרף שלו הוא 7. לסטרימר גדול הרף הוא 6.</p>
+
+    <div class="detail" id="detail" aria-live="polite"></div>
+
+    <div class="run">
+      <div class="run-head">
+        <h3>יומן הריצה, בשעון אמיתי</h3>
+        <button class="btn" id="replay" type="button">▶ להריץ שוב (5 שעות ב-10 שניות)</button>
+      </div>
+      <ol class="log" id="log"></ol>
+      <p class="total">מהרגע שהלייב נגמר ועד שהקליפ הראשון עלה לאוויר: <b class="data">5:01</b> שעות. אדם נגע בתהליך פעם אחת: לחיצה על ✓ בטלגרם.</p>
+    </div>
+  </div>
+
+  <div class="wrap" style="margin-inline:auto;margin-top:var(--s4)">
+    <h3>מה יצא מהריצה הזאת</h3>
+    <p class="muted" style="font-size:16px">הכותרות, התמניילים והתיאורים נכתבו על ידי המערכת. לחיצה פותחת את הקליפ ביוטיוב.</p>
+  </div>
+  <div class="clips" id="clips"></div>
+</section>
+
+<section class="wrap">
+  <span class="kicker">למה AI הוא הלב, ולא תוספת</span>
+  <h2>בלי מודל שפה, המוצר הזה לא קיים</h2>
+  <p class="lede">וידאו ארוך הוא שעות של דיבור, ורוב הזמן לא קורה בו כלום. בלייב זה 12 שעות של סלנג, צחוק ושקט; בהרצאה זה שעה וחצי שבה יש עשר דקות שכל אחד צריך לשמוע. אף כלל פשוט לא יגיד איפה הרגע הטוב מתחיל ואיפה הוא נגמר. בהתקציר המודל מקבל ארבע החלטות שעורך אנושי היה מקבל:</p>
+  <div class="ai">
+    <div><span class="n">01</span><div><h3>מה שווה לראות</h3><p>קורא את כל התמלול בחלונות של 45 דקות, מסמן קטעים, נותן ציון ומסביר למה. מבין מי מדבר על מי, ומה הקהל של הסצנה אוהב.</p></div></div>
+    <div><span class="n">02</span><div><h3>איך לקרוא לזה</h3><p>כותב כותרת, תיאור, טקסט לתמנייל וציטוט פתיחה. הוא לומד מכל אישור, דחייה ותיקון כותרת שלי: 12 ההחלטות האחרונות נכנסות לפרומפט.</p></div></div>
+    <div><span class="n">03</span><div><h3>מה רואים בתמנייל</h3><p>מודל ראייה עובר על 20 פריימים מהקליפ, מזהה מי הסטרימר ומי מולו לפי תמונת ייחוס, ובוחר את הפרצוף עם הרגש הכי חזק.</p></div></div>
+    <div><span class="n">04</span><div><h3>על מה לשלם</h3><p>מודד כמה "חם" הלייב (אזכורי יוצרים ומילות דרמה לשעה). דרמה חמה מנותחת מיד, וכל השאר נשלח לעיבוד מושהה בחצי מחיר, בתוך תקרה של $30 לחודש.</p></div></div>
+  </div>
+</section>
+
+<section class="wrap">
+  <span class="kicker">מספרים, לא הבטחות</span>
+  <h2>כמה זה עולה להריץ</h2>
+  <div class="tl-scroll">
+  <table class="nums">
+    <thead><tr><th>מה</th><th>כמה</th><th>מקור</th></tr></thead>
+    <tbody>
+      <tr><td>ניתוח לייב של 11.7 שעות</td><td>$1.84</td><td>סונט 5.5, נמדד 30.9.2026</td></tr>
+      <tr><td>כל ה-API בספטמבר (חודש ההרצה הראשון)</td><td>$14.79</td><td>חשבונית Anthropic</td></tr>
+      <tr><td>תקרת API חודשית</td><td>$30</td><td>מוגדרת בקוד ובחשבון</td></tr>
+      <tr><td>תמלול</td><td>$0</td><td>whisper על ה-GPU בבית</td></tr>
+      <tr><td>העלאות ביום</td><td>4</td><td>13:00, 16:00, 19:00, 22:00</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section class="wrap">
+  <span class="kicker">איפה אנחנו עכשיו</span>
+  <h2>הטכנולוגיה עובדת. ההפצה היא השלב הבא.</h2>
+  <p class="lede">הערוץ <a href="https://www.youtube.com/@hataktzir" target="_blank" rel="noopener"><bdi>@hataktzir</bdi></a> נפתח ב-10.9.2026. נכון ל-1.10.2026 יש בו 15 סרטונים, 6 מנויים וכ-630 צפיות. זה שלב מוקדם, והמספרים האלה הם נקודת ההתחלה, לא ההישג. מה שהוכח עד עכשיו הוא שהמכונה עצמה עובדת כל יום, לבד, בעלות של דולרים.</p>
+  <h3 style="margin-top:var(--s4)">מה למדתי בדרך</h3>
+  <div class="lessons">
+    <div><h3>באג שעלה כסף בשקט</h3><p>תשובות של המודל נקטעו בתקרת האורך, ומה שנקטע נזרק ושולם פעמיים. בלייב אחד זה קרה ב-5 מתוך 19 קריאות, כ-$0.8 מתוך $2. היום התקרה כפולה, וכל חלון שלא נותח עד הסוף מדווח לי.</p></div>
+    <div><h3>שני אנשים, שם אחד</h3><p>המודל ייחס סיפור ליוצר אחר שנקרא באותו שם פרטי, והכותרת עלתה לאוויר. התיקון: שם פרטי שמשותף לשני אנשים בסצנה לא מקושר לאף אחד בלי הכרעה מההקשר, ומסומן לבדיקה לפני האישור.</p></div>
+    <div><h3>הקרדיט הוא התנאי</h3><p>כל קליפ עולה עם קרדיט וקישור ליוצר. מארח שאין לו קישור תקין לא עולה בכלל, ויוצר שמבקש להסיר קטע, הקטע יורד תוך 24 שעות.</p></div>
+  </div>
+</section>
+
+<section class="wrap">
+  <span class="kicker">לאן זה הולך</span>
+  <h2>כל מי שמצלם תוכן ארוך</h2>
+  <p class="lede">סטרימרים הם רק ההתחלה. אותה מערכת עובדת על כל וידאו ארוך שמישהו צריך לערוך: הרצאה, פרק פודקאסט, אימון כושר. מרצה שמצלם קורס, פודקאסט שמעלה פרק בשבוע, מאמן שמצלם אימונים - לכולם יש שעות של חומר ואין להם עורך.</p>
+  <p class="lede"><b style="color:var(--gold)">המפתח לגדילה הוא פנייה אישית.</b> לכל יוצר אני מגיע עם קליפים אמיתיים מהתוכן שלו, שהמערכת כבר הוציאה. לא מצגת, אלא התוצאה עצמה. והצינור לא תלוי בעברית: כדי לעבור לשפה אחרת מחליפים פרומפטים ורשימת שמות, לא קוד.</p>
+  <div class="road">
+    <div><span class="when">עכשיו · שוק הניסוי</span><b>לייבים ביוטיוב</b><p>ערוץ קליפים עצמאי שרץ כל יום, ושירות חודשי לסטרימרים שרוצים ערוץ קליפים בלי לגעת בו.</p></div>
+    <div><span class="when">הבא · פנייה אישית</span><b>מרצים, פודקאסטים, מאמני כושר</b><p>אחרי כל הרצאה, פרק או אימון: קטעים של 3-8 דקות ושורטס, מוכנים לפרסום.</p></div>
+    <div><span class="when">היעד</span><b>אנגלית וחו"ל</b><p>RPM באנגלית גבוה פי 2-3 מבישראל, והשוק גדול פי כמה סדרי גודל.</p></div>
+  </div>
+
+  <h3 style="margin-top:var(--s4)">מה המערכת תדע לעשות בהמשך</h3>
+  <p class="muted" style="margin-top:6px;font-size:16px">כל שלב כאן נשען על מה שכבר רץ. ליד כל אחד כתוב איפה הוא עומד היום.</p>
+  <ul class="plan">
+    <li><span class="pst pst-part">חלקית קיים</span><div><b>לומדת מהטעם של מי שמאשר</b><p>היום כל אישור, דחייה ותיקון כותרת שלי נכנסים לפרומפט של הבחירה הבאה. השלב הבא: משוב נפרד לכל יוצר, כי מה שעובד אצל אחד לא בהכרח עובד אצל אחר.</p></div></li>
+    <li><span class="pst pst-part">חלקית קיים</span><div><b>אישור בלי לצפות</b><p>כבר היום הודעת האישור כוללת תמנייל, כותרת ונימוק של המודל, כך שאפשר להחליט בלי לראות את הקליפ. אחרי 30-50 החלטות נמדוד מאיזה ציון אני מאשר כמעט הכל, ומעליו קליפ יעלה לבד אלא אם אעצור אותו.</p></div></li>
+    <li><span class="pst">מתוכנן</span><div><b>לומדת מהצפיות</b><p>משיכת נתוני צפייה מיוטיוב לכל קליפ ולכל סדרה. מה שמביא פי 2 מהממוצע מקבל עדיפות בתור, ומה שחלש יורד. המערכת תלמד מהקהל עצמו, לא רק ממני.</p></div></li>
+    <li><span class="pst">מתוכנן</span><div><b>קומפילציות בין יוצרים</b><p>אותו סיפור מסופר אצל 3-5 יוצרים בתוך יום-יומיים. המערכת כבר מזהה מי מדבר על מי, והצעד הבא הוא סרטון אחד עם כל הצדדים. זה הפורמט שהכי עובד בסצנה.</p></div></li>
+    <li><span class="pst">מתוכנן</span><div><b>שורטס וטיקטוק</b><p>3-5 סרטונים אנכיים של 30-60 שניות מכל לייב, הרצאה או פרק, עם כתוביות. אותו ניתוח, פורמט אחר.</p></div></li>
+    <li><span class="pst">מתוכנן</span><div><b>ערוץ קליפים רשמי לכל יוצר</b><p>המערכת מעלה ישירות לערוץ של היוצר, תמורת מנוי חודשי או חלוקת הכנסות מהערוץ. היוצר מקבל ערוץ חי בלי לגעת בו.</p></div></li>
+    <li><span class="pst">אחרי הענן</span><div><b>קישור נכנס, קטעים יוצאים</b><p>שירות פתוח לכל יוצר: מדביקים קישור להרצאה, לפרק או לאימון, ומקבלים קטעים מוכנים עם כותרות ותמניילים.</p></div></li>
+  </ul>
+
+  <h3 style="margin-top:var(--s4)">לאן תלך ההשקעה</h3>
+  <ul class="plan">
+    <li><div><b>שרת ענן</b><p>במקום מחשב ביתי אחד: כמה סרטונים מעובדים במקביל, ואפשר לקבל יוצרים חדשים בלי לחכות בתור.</p></div></li>
+    <li><div><b>פיתוח המערכת</b><p>השלבים שלמעלה, ויציבות: שהמערכת תרוץ כל יום בלי השגחה, גם כשיש עשרות יוצרים.</p></div></li>
+    <li><div><b>יציבות</b><p>היום אני בונה את זה לבד. השקעה נותנת לי יציבות להתמקד בתקציר ולהקדיש זמן לפנייה האישית ליוצרים.</p></div></li>
+  </ul>
+
+  <h3 style="margin-top:var(--s4)">מה עוצר את הגדילה היום</h3>
+  <p class="muted" style="margin-top:6px">שני דברים, ושניהם תשתית ולא מוצר. הראשון הוא המחשב: הכל רץ על מחשב ביתי אחד, עם תמלול אחד בכל רגע. הצעד הבא הוא שרת ענן עם GPU, שיעבד כמה לייבים במקביל וישרת עוד יוצרים ועוד שפות באותו צינור. השני הוא יוטיוב: מכסת ה-API מאפשרת 6 העלאות ביום לכל הפרויקט, ובקשה להגדלה שלה היא הצעד הבא.</p>
+</section>
+
+<section class="wrap">
+  <span class="kicker">מי בנה</span>
+  <h2>לירון, בן 21</h2>
+  <p class="lede">הנדסאי תוכנה מצטיין וחייל משוחרר, אוהב מתמטיקה ומספרים. בניתי את התקציר לבד, מהרעיון ועד ערוץ שמעלה לבד כל יום. עכשיו אני מחפש את מה שקוד לא פותר: שיווק, הפצה ואנשים לבנות איתם.</p>
   <p>יצירת קשר: <a href="mailto:lironn217@gmail.com">lironn217@gmail.com</a></p>
-  <footer>
-    <a href="privacy.html">מדיניות פרטיות / Privacy Policy</a>
-  </footer>
-</main>
+</section>
+
+<section class="wrap en" lang="en">
+  <span class="kicker">In English</span>
+  <p><b style="color:var(--cream)">Hataktzir is an AI system that shortens long-form video into ready-to-publish clips, with no manual editing.</b> It started with 12-hour livestreams on YouTube, the niche I come from. It detects when a stream ends, transcribes it on a home GPU, and an LLM reads the whole transcript to pick and score the moments worth watching. The system then cuts them, writes titles and descriptions, picks a thumbnail frame with a vision model, credits the creator and uploads. A human approves with one tap.</p>
+  <p>Measured on a real 11.7-hour stream: $1.84 of model cost, about 5 hours from stream end to the first clip online, all on one PC with a GTX 1650. Israel is the test market; the pipeline is language-agnostic, and the same system fits anyone who films long-form video: lecturers, podcasters, fitness coaches. English (2-3x the RPM) and creators abroad are next. The next infrastructure step is a cloud GPU server, so several streams can be processed in parallel instead of on one home PC.</p>
+</section>
+
+<footer class="wrap">
+  <div class="row">
+    <a href="https://www.youtube.com/@hataktzir" target="_blank" rel="noopener"><bdi>YouTube: @hataktzir</bdi></a>
+    <a href="https://github.com/lironobel/hataktzir" target="_blank" rel="noopener">GitHub</a>
+    <a href="mailto:lironn217@gmail.com">lironn217@gmail.com</a>
+  </div>
+  <div>"hataktzir uploader" הוא הכלי הפרטי שמעלה את הקליפים לערוץ <bdi>@hataktzir</bdi> דרך YouTube Data API. <a href="privacy.html">מדיניות פרטיות / Privacy Policy</a></div>
+</footer>
+
+<script>
+(function () {
+  var LIVE = 42321; // seconds, end of the transcript
+  function sec(t) { var p = t.split(':').map(Number); return p[0] * 3600 + p[1] * 60 + p[2]; }
+  var SEGS = [
+    { n: 1, s: '02:29:26', e: '02:47:47', score: 9, cat: 'סיפור אישי', status: 'up', id: 'hcC25jiZf9E', dur: '18:31', thumb: 'הרגיש אפס',
+      title: 'פרנזי חושף איך דה כהן ניצל אותו... איזו השפלה עברתי',
+      note: 'כאן המודל טעה: הכותרת המקורית ייחסה את הסיפור ליוצר אחר עם אותו שם פרטי. היא תוקנה אחרי ההעלאה, ומאז יש כלל לשמות כאלה.' },
+    { n: 2, s: '00:23:11', e: '00:37:53', score: 8, cat: 'דרמה', status: 'up', id: '4iEiSLC6AuY', dur: '14:58', thumb: 'רמת מובטלות מאה',
+      title: '"תמצאי חיים, גברת" - עודד מתפוצץ על טופאזה אבו גגה שהאשימה אותו בגזענות' },
+    { n: 3, s: '01:00:02', e: '01:14:28', score: 8, cat: 'דרמה', status: 'up', id: 'f8ITTBURzNo', dur: '14:41', thumb: 'שחטתי אותו',
+      title: "עודד עושה קלפי טריידינג לכל הסצנה - רונן ג'יג'י נשחט בלי רחמים" },
+    { n: 4, s: '01:16:50', e: '01:29:26', score: 8, cat: 'דרמה', status: 'up', id: 'aDRbOx93Ano', dur: '12:43', thumb: 'אחראי על הכל',
+      title: '"אתה קשור לכל דרמה" עודד מתעמת עם מיכאל בלייב' },
+    { n: 5, s: '01:30:05', e: '01:51:41', score: 8, cat: 'דרמה', status: 'up', id: 'e8nlmivDXro', dur: '21:42', thumb: 'הצורה שדיברת',
+      title: 'עודד עושה סדר בין פרנזי לליאור... "הצורה שדיברת" (ומיכאל שוב באמצע)' },
+    { n: 6, s: '10:51:32', e: '11:33:45', score: 8, cat: 'דרמה', status: 'up', id: 'SnmXHlNn-XU', dur: '42:22', thumb: 'התחזה לחוקר משטרה',
+      title: 'עודד מספר איך "איים" על ילד שהתקשר למאסטר אוהד בשש בבוקר... (זה עבד)' },
+    { n: 7, s: '11:34:42', e: '11:43:14', score: 8, cat: 'דרמה', status: 'up', id: 'gT_dZlHEHWQ', dur: '8:55', thumb: 'מנסה להיראות טהור',
+      title: "עודד עושה סדר ב'עץ הדרמה' של מאסטר אוהד, ומגיב לטענות שהוא צבוע" },
+    { n: 8, s: '01:58:35', e: '02:20:20', score: 7, cat: 'דרמה', status: 'queue' },
+    { n: 9, s: '03:19:28', e: '03:25:42', score: 7, cat: 'סיפור אישי', status: 'rejected' },
+    { n: 10, s: '00:14:16', e: '00:22:29', score: 6, cat: '', status: 'below' },
+    { n: 11, s: '02:23:17', e: '02:29:02', score: 5, cat: '', status: 'below' }
+  ];
+  var STATUS = {
+    up: ['עלה ליוטיוב', 'st-up'],
+    queue: ['אושר, ממתין בתור ההעלאות', 'st-q'],
+    rejected: ['נחתך, ונדחה באישור שלי', 'st-no'],
+    below: ['מתחת לרף, לא נחתך', 'st-no']
+  };
+  var svg = document.getElementById('timeline');
+  var NS = 'http://www.w3.org/2000/svg';
+  var X0 = 20, X1 = 980, BASE = 190, TOP = 30;
+  // RTL: the stream starts on the right
+  function x(t) { return X1 - (t / LIVE) * (X1 - X0); }
+  function h(score) { return (score / 10) * (BASE - TOP); }
+  function el(name, attrs) { var e = document.createElementNS(NS, name); for (var k in attrs) e.setAttribute(k, attrs[k]); return e; }
+  var css = getComputedStyle(document.documentElement);
+  var C = { gold: css.getPropertyValue('--gold').trim(), line: css.getPropertyValue('--line').trim(), muted: css.getPropertyValue('--muted').trim(), cream: css.getPropertyValue('--cream').trim() };
+  var thr = 7, selected = 1;
+
+  function draw() {
+    svg.innerHTML = '';
+    // hour grid
+    for (var hr = 0; hr <= 11; hr++) {
+      var gx = x(hr * 3600);
+      svg.appendChild(el('line', { x1: gx, x2: gx, y1: TOP - 10, y2: BASE, stroke: C.line, 'stroke-width': 1 }));
+      if (hr % 2 === 0) { var tx = el('text', { x: gx, y: BASE + 20, 'text-anchor': 'middle' }); tx.textContent = hr + ':00'; svg.appendChild(tx); }
+    }
+    var endT = el('text', { x: x(LIVE), y: BASE + 20, 'text-anchor': 'start' }); endT.textContent = '11:45'; svg.appendChild(endT);
+    svg.appendChild(el('line', { x1: X0, x2: X1, y1: BASE, y2: BASE, stroke: C.muted, 'stroke-width': 1 }));
+    // threshold line
+    var ty = BASE - h(thr);
+    svg.appendChild(el('line', { x1: X0, x2: X1, y1: ty, y2: ty, stroke: C.gold, 'stroke-width': 1, 'stroke-dasharray': '4 4' }));
+    var tl = el('text', { x: X1, y: ty - 6, 'text-anchor': 'end' }); tl.textContent = 'רף ' + thr; tl.setAttribute('class', 'he'); tl.setAttribute('style', 'fill:' + C.gold); svg.appendChild(tl);
+    SEGS.forEach(function (s) {
+      var a = sec(s.s), b = sec(s.e);
+      var xa = x(b), w = Math.max(6, x(a) - x(b));
+      var pass = s.score >= thr;
+      var r = el('rect', { x: xa, y: BASE - h(s.score), width: w, height: h(s.score), fill: pass ? C.gold : C.line, class: 'seg', tabindex: 0, role: 'button',
+        'aria-label': 'קטע ' + s.n + ', ציון ' + s.score + ', ' + s.s + ' עד ' + s.e });
+      if (s.n === selected) { r.setAttribute('stroke', C.cream); r.setAttribute('stroke-width', 2); }
+      r.addEventListener('click', function () { select(s.n); });
+      r.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); select(s.n); } });
+      svg.appendChild(r);
+      var lab = el('text', { x: xa + w / 2, y: BASE - h(s.score) - 6, 'text-anchor': 'middle' }); lab.textContent = s.score;
+      lab.setAttribute('style', 'fill:' + (pass ? C.cream : C.muted)); svg.appendChild(lab);
+    });
+    var st = el('text', { x: X1, y: 16, 'text-anchor': 'end' }); st.textContent = '← תחילת הלייב'; st.setAttribute('class', 'he'); svg.appendChild(st);
+    funnel();
+  }
+
+  function funnel() {
+    var pass = SEGS.filter(function (s) { return s.score >= thr; }).length;
+    document.getElementById('funnel').innerHTML =
+      '<span><b>11</b> קטעים סומנו</span><span><b>' + pass + '</b> מעל הרף ייחתכו</span>' +
+      (thr === 7 ? '<span>בפועל: <b>8</b> אושרו, <b>7</b> כבר ביוטיוב</span>' : '<span class="muted">בריצה האמיתית הרף היה 7</span>');
+    document.getElementById('thrv').textContent = thr;
+  }
+
+  function select(n) {
+    selected = n; draw();
+    var s = SEGS[n - 1];
+    var st = STATUS[s.status];
+    var len = sec(s.e) - sec(s.s), m = Math.floor(len / 60), ss = ('0' + (len % 60)).slice(-2);
+    var img = s.id ? '<a href="https://youtu.be/' + s.id + '" target="_blank" rel="noopener"><img src="demo/clip' + s.n + '.jpg" alt="התמנייל שהמערכת בנתה לקטע ' + s.n + '"></a>'
+                   : '<div class="ph">' + (s.status === 'below' ? 'הקטע לא עבר את הרף, ולכן לא נחתך ולא קיבל תמנייל.' : 'הקטע לא עלה לאוויר, ולכן אין כאן כותרת או תמנייל.') + '</div>';
+    var title = s.title ? s.title : 'קטע ' + s.n;
+    document.getElementById('detail').innerHTML = img +
+      '<div><span class="status ' + st[1] + '">' + st[0] + '</span><h3 style="margin-top:10px">' + esc(title) + '</h3>' +
+      '<dl class="facts"><dt>ציון</dt><dd><span class="data">' + s.score + '/10</span></dd>' +
+      '<dt>בשידור</dt><dd><span class="data">' + s.s + ' → ' + s.e + '</span></dd>' +
+      '<dt>אורך</dt><dd><span class="data">' + m + ':' + ss + '</span></dd>' +
+      (s.cat ? '<dt>סוג</dt><dd>' + s.cat + '</dd>' : '') +
+      (s.thumb ? '<dt>טקסט לתמנייל</dt><dd>"' + esc(s.thumb) + '"</dd>' : '') + '</dl>' +
+      (s.id ? '<a href="https://youtu.be/' + s.id + '" target="_blank" rel="noopener">לצפייה ביוטיוב ←</a>' : '') +
+      (s.note ? '<p class="note" style="margin-top:12px">' + esc(s.note) + '</p>' : '') + '</div>';
+    document.querySelectorAll('.clip').forEach(function (c) { c.classList.toggle('sel', +c.dataset.n === n); });
+  }
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  document.getElementById('thr').addEventListener('input', function (e) { thr = +e.target.value; draw(); });
+
+  // clips grid
+  var grid = document.getElementById('clips');
+  SEGS.filter(function (s) { return s.id; }).forEach(function (s) {
+    var a = document.createElement('a');
+    a.className = 'clip'; a.href = 'https://youtu.be/' + s.id; a.target = '_blank'; a.rel = 'noopener'; a.dataset.n = s.n;
+    a.innerHTML = '<div class="th"><img loading="lazy" src="demo/clip' + s.n + '.jpg" alt=""><span class="dur">' + s.dur + '</span></div>' +
+      '<h3>' + esc(s.title) + '</h3><span class="sub">ציון ' + s.score + ' · <span class="data">' + s.s + '</span> בשידור</span>';
+    grid.appendChild(a);
+  });
+
+  // run log
+  var LOG = [
+    ['20:13', 'הלייב נגמר, המערכת מתחילה', 'המנטר בודק כל 5 דקות מי משדר, ומזהה סוף לייב אחרי שתי בדיקות נקיות ברצף.', ''],
+    ['20:13', 'הורדת האודיו של כל השידור', '410MB. וידאו ברזולוציה מלאה יורד רק לקטעים שנבחרו.', '54 דק\''],
+    ['21:07', 'תמלול על ה-GPU בבית', 'whisper על GTX 1650. תמלול אחד בכל רגע, כדי לא לחנוק את המחשב.', '46 דק\''],
+    ['21:53', 'החלטת תקציב: "דרמה חמה, בזמן אמת"', '37.5 אזכורי יוצרים לשעה. לייב פחות חם היה נשלח לעיבוד מושהה בחצי מחיר.', ''],
+    ['21:53', 'המודל קורא את כל התמלול ובוחר', '11 קטעים עם ציון והסבר, 9 מעל הרף.', '36 דק\''],
+    ['22:29', 'חיתוך ברזולוציה מלאה', 'כל קליפ מעל 3 דקות נפתח ב-6-15 שניות מהרגע הכי חזק בו, ותמיד מתחיל על דיבור.', '146 דק\''],
+    ['00:55', 'כותרות, תיאורים וקרדיטים', 'קרדיט וקישור לכל יוצר שמופיע בקליפ.', '1 דק\''],
+    ['00:57', 'תמניילים', 'מודל ראייה בוחר פריים ופרצופים מתוך 20 פריימים לכל קליפ.', '7 דק\''],
+    ['01:12', 'אישור ✓ בטלגרם', 'מקבל תמנייל, כותרת ונימוק בטלפון. לחיצה אחת.', ''],
+    ['01:14', 'הקליפ הראשון עולה ליוטיוב', 'השאר נכנסים לתור: 4 ביום, לא שניים מאותו לייב ברצף.', '']
+  ];
+  var DUR = [0, 54, 46, 0, 36, 146, 1, 7, 8, 2];
+  var log = document.getElementById('log');
+  LOG.forEach(function (r) {
+    var li = document.createElement('li');
+    li.innerHTML = '<span class="t">' + r[0] + '</span><span class="what">' + r[1] + '<small>' + r[2] + '</small></span><span class="d">' + r[3] + '</span>';
+    log.appendChild(li);
+  });
+  var timer = null;
+  document.getElementById('replay').addEventListener('click', function () {
+    var items = log.querySelectorAll('li');
+    if (timer) clearTimeout(timer);
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+    items.forEach(function (li) { li.classList.add('pending'); li.classList.remove('active'); });
+    var total = DUR.reduce(function (a, b) { return a + b; }, 0);
+    var i = 0;
+    (function step() {
+      if (i > 0) items[i - 1].classList.remove('active');
+      if (i >= items.length) return;
+      items[i].classList.remove('pending'); items[i].classList.add('active');
+      var wait = 350 + (DUR[i] / total) * 8000;
+      i++; timer = setTimeout(step, wait);
+    })();
+  });
+
+  draw(); select(1);
+})();
+</script>
 </body>
 </html>
